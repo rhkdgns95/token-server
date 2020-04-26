@@ -25,15 +25,16 @@ export class User extends BaseEntity {
 	@Column('text')
 	password: string;
 
-	
 	comparePassword(password: string): boolean {
-		if(!this.password) {
+		if (!this.password) {
 			return false;
 		}
 		const valid: boolean = compareSync(password, this.password);
 		return valid;
 	}
-
+	@Field()
+	@Column("int", { default: 0 })
+	tokenVersion: number;
 	@Field()
 	@CreateDateColumn()
 	createdAt: string;
@@ -42,4 +43,3 @@ export class User extends BaseEntity {
 	@UpdateDateColumn()
 	updatedAt: string;
 }
-

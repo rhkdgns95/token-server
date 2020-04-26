@@ -24,6 +24,7 @@
     "plugin:prettier/recommended"
   ],
   "rules": {
+    "no-param-reassign": 0,
     "lines-between-class-members": 0,
     "import/prefer-default-export": 0,
     "class-methods-use-this": 0,

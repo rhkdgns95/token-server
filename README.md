@@ -21,6 +21,9 @@
 - yarn add type-graphql bcryptjs
 - yarn add -D nodemon
 - yarn add jsonwebtoken
+- yarn add dotenv
+- yarn add cookie-parser 
+- yarn add -D @types/cookie-parser
 
 ## Code
 <details>
@@ -104,3 +107,6 @@ async EmailSignIn(
 - 최신버전으로 다운 됨.
 
 ## ETC
+
+1. Ctrl + Shift + H
+> - Restful Client의 요청 history

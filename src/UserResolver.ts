@@ -1,15 +1,33 @@
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import {
+	Resolver,
+	Query,
+	Mutation,
+	Arg,
+	Ctx,
+	UseMiddleware,
+	Int,
+} from 'type-graphql';
 import { hash } from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { User } from './entity/User';
 import { LoginResponse } from './api/user/LoginResponse';
 import { MyContext } from './MyContext';
+import { createAccessToken, createRefreshToken } from './auth';
+import { isAuth } from './isAuth';
+import { sendRefreshToken } from './sendRefreshToken';
+import { getConnection } from 'typeorm';
 
 @Resolver(User)
 export class UserResolver {
 	@Query(() => String)
 	hi(): string {
 		return 'HI';
+	}
+	@Query(() => String)
+	@UseMiddleware(isAuth)
+	async bye(@Ctx() { payload }: MyContext) {
+		console.log('payload: ', payload);
+		const userId = payload?.userId;
+		return 'your user id is ' + userId;
 	}
 
 	@Query(() => [User])
@@ -20,53 +38,12 @@ export class UserResolver {
 			return null;
 		}
 	}
-
-	@Mutation(() => LoginResponse)
-	async login(
-		@Arg('email') email: string,
-		@Arg('password') password: string,
-		@Ctx() ctx: MyContext
-	): Promise<LoginResponse> {
-		console.log(ctx.req.get('x-jwt'));
-		try {
-			const user: User | undefined = await User.findOne({
-				where: {
-					email,
-				},
-			});
-			if (user) {
-				const valid = user.comparePassword(password);
-				if (valid) {
-					const token: string = jwt.sign({ userId: user.id }, 'SECRET_KEY', {
-						expiresIn: '15m',
-					});
-					return {
-						ok: true,
-						error: undefined,
-						token,
-					};
-				} else {
-					return {
-						ok: false,
-						error: 'Not Found Password',
-						token: undefined,
-					};
-				}
-			} else {
-				return {
-					ok: false,
-					error: 'Not Found User',
-					token: undefined,
-				};
-			}
-		} catch (error) {
-			console.log('login error: ', error.message);
-			return {
-				ok: false,
-				error: error.message,
-				token: undefined,
-			};
-		}
+	@Mutation(() => Boolean)
+	async revokeRefreshTOkensForUser(@Arg('userId', () => Int) userId: number) {
+		await getConnection()
+			.getRepository(User)
+			.increment({ id: userId }, 'tokenVersion', 1);
+			return true;
 	}
 
 	@Mutation(() => Boolean)
@@ -84,6 +61,46 @@ export class UserResolver {
 		} catch (error) {
 			console.log('register error: ', error.message);
 			return false;
+		}
+	}
+
+	@Mutation(() => LoginResponse)
+	async login(
+		@Arg('email') email: string,
+		@Arg('password') password: string,
+		@Ctx() { res }: MyContext
+	): Promise<LoginResponse> {
+		const user = await User.findOne({
+			where: {
+				email,
+			},
+		});
+		if (user) {
+			const valid: boolean = user.comparePassword(password);
+			if (valid) {
+				// login Successful
+				const accessToken: string = createAccessToken(user);
+				const refreshToken: string = createRefreshToken(user);
+				sendRefreshToken(res, refreshToken);
+
+				return {
+					ok: true,
+					error: undefined,
+					token: accessToken,
+				};
+			} else {
+				return {
+					ok: false,
+					error: 'Wrong password',
+					token: undefined,
+				};
+			}
+		} else {
+			return {
+				ok: false,
+				error: 'Not found email',
+				token: undefined,
+			};
 		}
 	}
 }
