@@ -7,8 +7,8 @@ import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import cookieParser from 'cookie-parser';
 import { createConnection } from 'typeorm';
-import { UserResolver } from './UserResolver';
 import { verify } from 'jsonwebtoken';
+import { UserResolver } from './UserResolver';
 import { User } from './entity/User';
 import { createRefreshToken, createAccessToken } from './auth';
 import { sendRefreshToken } from './sendRefreshToken';
@@ -53,7 +53,7 @@ import { sendRefreshToken } from './sendRefreshToken';
 				});
 			} else {
 				// ok
-				if(user.tokenVersion !== payload.tokenVersion) {
+				if (user.tokenVersion !== payload.tokenVersion) {
 					return res.send({
 						ok: false,
 						accessToken: '',

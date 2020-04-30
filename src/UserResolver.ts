@@ -8,13 +8,13 @@ import {
 	Int,
 } from 'type-graphql';
 import { hash } from 'bcryptjs';
+import { getConnection } from 'typeorm';
 import { User } from './entity/User';
 import { LoginResponse } from './api/user/LoginResponse';
 import { MyContext } from './MyContext';
 import { createAccessToken, createRefreshToken } from './auth';
 import { isAuth } from './isAuth';
 import { sendRefreshToken } from './sendRefreshToken';
-import { getConnection } from 'typeorm';
 
 @Resolver(User)
 export class UserResolver {
@@ -38,11 +38,13 @@ export class UserResolver {
 			return null;
 		}
 	}
+
 	@Mutation(() => Boolean)
-	async revokeRefreshTOkensForUser(@Arg('userId', () => Int) userId: number) {
+	async revokeTokensForUser(@Arg('userId', () => Int) userId: number) {
 		await getConnection()
 			.getRepository(User)
 			.increment({ id: userId }, 'tokenVersion', 1);
+
 			return true;
 	}
 
